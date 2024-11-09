@@ -49,7 +49,7 @@ export default function AlunoScreen() {
         foto,
       };
       const response = await api.post("/aluno", objAluno);
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         Alert.alert("Sucesso", "Aluno salvo com sucesso!");
         setRa("");
         setNome("");
@@ -58,8 +58,7 @@ export default function AlunoScreen() {
         Alert.alert("Erro", "Erro ao salvar o aluno.");
       }
     } catch (error) {
-      Alert.alert("Erro", "Erro ao se conectar com o servidor.");
-      console.error(error);
+      Alert.alert("Erro", error?.response?.data?.erro);
     }
   };
 

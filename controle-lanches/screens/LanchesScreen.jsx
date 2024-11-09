@@ -20,12 +20,34 @@ export default function LanchesScreen() {
   const [dataLiberacao, setDataLiberacao] = useState(new Date());
   const [quantidade, setQuantidade] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [fotoAluno, setFotoAluno] = useState(null); // Estado para armazenar a foto do aluno
 
   // Carregar alunos do banco
   const carregarAlunos = async () => {
     console.log("Carregando alunos...");
-    const response = await api.get("/aluno/filter/getAll");
+    const response = await api.get("/aluno/filter/getAllRaAndName");
     setAlunos(response.data);
+  };
+
+  // Carregar foto do aluno selecionado
+  const carregarFoto = async (ra) => {
+    try {
+      const response = await api.get(`/aluno/${ra}/foto`);
+      if (response.data) {
+        const { type, data } = response.data;
+        // Verifique se 'data' é um array de bytes
+        console.log(data[10]);
+        if (Array.isArray(data)) {
+          const byteArray = new Uint8Array(data);
+          const base64String = Buffer.from(byteArray).toString("base64");
+          // console.log("Base64 gerado:", base64String.slice(0, 1000));
+          setFotoAluno(`data:${type};base64,${base64String}`);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar foto:", error);
+      setFotoAluno(null);
+    }
   };
 
   useEffect(() => {
@@ -51,6 +73,7 @@ export default function LanchesScreen() {
     setDataLiberacao(new Date());
     setQuantidade("");
     setAlunoSelecionado(null); // Limpa a seleção do aluno após autorizar
+    setFotoAluno(null); // Limpa a foto após a autorização
   };
 
   // Função para lidar com a mudança da data
@@ -60,41 +83,10 @@ export default function LanchesScreen() {
     setDataLiberacao(currentDate);
   };
 
-  const renderFotoAluno = () => {
-    const aluno = alunos.find((aluno) => aluno._id === alunoSelecionado);
-
-    if (aluno && aluno.foto) {
-      const { type, data } = aluno.foto;
-
-      // Verifique se 'data' é um array de bytes
-      if (Array.isArray(data)) {
-        // Criando um Uint8Array a partir do array de bytes
-        const byteArray = new Uint8Array(data);
-
-        // Convertendo o Uint8Array para Base64
-        const base64String = Buffer.from(byteArray).toString("base64");
-
-        // Logando as primeiras 1000 letras para debugging
-        console.log(base64String.slice(0, 1000));
-        console.log(type);
-
-        return (
-          <Image
-            source={{
-              uri: `data:${type};base64,${base64String}`, // Formatando a string para exibição
-            }}
-            style={styles.alunoFoto} // Estilo da imagem
-            resizeMode="cover" // Ajuste o modo de redimensionamento conforme necessário
-          />
-        );
-      } else {
-        console.warn("O formato de dados da foto é inválido.");
-      }
-    } else {
-      console.warn("Foto não disponível para o aluno selecionado.");
-    }
-
-    return null; // Retornando null se não houver aluno ou foto
+  // Função que será chamada quando o aluno for selecionado
+  const onAlunoSelecionado = (ra) => {
+    setAlunoSelecionado(ra);
+    carregarFoto(ra); // Chama a função para carregar a foto
   };
 
   return (
@@ -125,16 +117,25 @@ export default function LanchesScreen() {
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={alunoSelecionado}
-          onValueChange={(itemValue) => setAlunoSelecionado(itemValue)}
+          onValueChange={onAlunoSelecionado} // Agora chama a função onAlunoSelecionado
           style={styles.picker}
         >
           <Picker.Item label="Selecione o Aluno" value={null} />
           {alunos.map((aluno) => (
-            <Picker.Item key={aluno._id} label={aluno.nome} value={aluno._id} />
+            <Picker.Item
+              key={aluno._id}
+              label={`${aluno.ra} - ${aluno.nome}`}
+              value={aluno.ra} // Passando o RA como valor
+            />
           ))}
         </Picker>
-        {alunoSelecionado && renderFotoAluno()}
-        {/* Renderiza a foto do aluno */}
+        {fotoAluno && (
+          <Image
+            source={{ uri: fotoAluno }} // Exibe a foto do aluno
+            style={styles.alunoFoto}
+            resizeMode="cover"
+          />
+        )}
       </View>
 
       {/* Quantidade de Lanches */}

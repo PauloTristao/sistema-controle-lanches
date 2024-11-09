@@ -3,6 +3,7 @@ const AlunoModel = require("../model/AlunoModel");
 class AlunoController {
   // Cria um novo aluno
   async create(req, res) {
+    console.log("Cheguei aqui");
     const aluno = new AlunoModel(req.body);
 
     await aluno
@@ -27,11 +28,34 @@ class AlunoController {
       });
   }
 
+  async getAllRaAndName(req, res) {
+    try {
+      const alunos = await AlunoModel.find().select("ra nome").sort("ra");
+      return res.status(200).json(alunos);
+    } catch (error) {
+      return res.status(500).json({ message: "Erro ao buscar alunos", error });
+    }
+  }
+
   // Obtém um aluno específico por RA
   async get(req, res) {
     await AlunoModel.findOne({ ra: req.params.ra })
       .then((response) => {
         return res.status(200).json(response);
+      })
+      .catch((error) => {
+        return res.status(500).json(error);
+      });
+  }
+
+  async getFoto(req, res) {
+    await AlunoModel.findOne({ ra: req.params.ra })
+      .select("foto") // Retorna apenas o campo 'foto'
+      .then((response) => {
+        if (!response) {
+          return res.status(404).json({ message: "Aluno não encontrado." });
+        }
+        return res.status(200).json(response.foto); // Retorna apenas a foto
       })
       .catch((error) => {
         return res.status(500).json(error);

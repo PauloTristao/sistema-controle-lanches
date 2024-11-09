@@ -1,6 +1,7 @@
 const AlunoModel = require("../model/AlunoModel");
 
 async function AlunoValidation(req, res, next) {
+  console.log("epa");
   const { ra, nome, foto } = req.body;
   // Validação do RA
   if (!ra || ra.length < 3) {
