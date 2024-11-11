@@ -1,7 +1,6 @@
 const AlunoModel = require("../model/AlunoModel");
 
 async function AlunoValidation(req, res, next) {
-  console.log("epa");
   const { ra, nome, foto } = req.body;
   // Validação do RA
   if (!ra || ra.length < 3) {
@@ -19,7 +18,6 @@ async function AlunoValidation(req, res, next) {
 
   // Validação da Foto (esperando que venha de `req.file`)
   if (!foto) {
-    console.log("OPA2");
     return res.status(400).json({ erro: "Informe a foto do aluno" });
   }
 

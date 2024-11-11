@@ -23,11 +23,9 @@ class EntregaController {
       dataEntrega,
     });
     if (existingEntrega) {
-      return res
-        .status(400)
-        .json({
-          message: "Entrega já registrada para esse aluno na data informada.",
-        });
+      return res.status(400).json({
+        message: "Entrega já registrada para esse aluno na data informada.",
+      });
     }
 
     // Verifica se a quantidade de lanches entregues não excede a autorizada

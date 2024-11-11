@@ -3,24 +3,19 @@ const AlunoModel = require("../model/AlunoModel");
 class AlunoController {
   // Cria um novo aluno
   async create(req, res) {
-    console.log("Cheguei aqui");
-    const aluno = new AlunoModel(req.body);
+    const alunoData = req.body;
 
+    const aluno = new AlunoModel(alunoData);
     await aluno
       .save()
-      .then((response) => {
-        return res.status(201).json(response);
-      })
-      .catch((error) => {
-        return res.status(500).json(error);
-      });
+      .then((response) => res.status(201).json(response))
+      .catch((error) => res.status(500).json(error));
   }
   // Obtém todos os alunos, ordenados por RA
   async getAll(req, res) {
     await AlunoModel.find()
       .sort("ra")
       .then((response) => {
-        console.log(response);
         return res.status(200).json(response);
       })
       .catch((error) => {
@@ -52,10 +47,16 @@ class AlunoController {
     await AlunoModel.findOne({ ra: req.params.ra })
       .select("foto") // Retorna apenas o campo 'foto'
       .then((response) => {
-        if (!response) {
-          return res.status(404).json({ message: "Aluno não encontrado." });
+        if (!response || !response.foto) {
+          return res
+            .status(404)
+            .json({ message: "Aluno não encontrado ou sem foto." });
         }
-        return res.status(200).json(response.foto); // Retorna apenas a foto
+        const fotoBase64 = response.foto.toString("base64"); // Converte para base64
+        return res.status(200).json({
+          type: "image/png", // Tipo MIME da imagem
+          foto: fotoBase64, // Retorna a imagem em base64
+        });
       })
       .catch((error) => {
         return res.status(500).json(error);
@@ -108,7 +109,6 @@ class AlunoController {
       .limit(1);
     let id = 1;
     if (resposta != null) {
-      console.log(resposta);
       id = Number.parseInt(resposta.id) + 1;
     }
 
