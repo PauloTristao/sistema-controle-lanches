@@ -2,26 +2,24 @@ const AlunoModel = require("../model/AlunoModel");
 
 async function AlunoValidation(req, res, next) {
   const { ra, nome, foto } = req.body;
-  // Validação do RA
+  console.log("opa");
+
   if (!ra || ra.length < 3) {
     return res
       .status(400)
       .json({ erro: "Informe um RA válido com ao menos 3 caracteres" });
   }
 
-  // Validação do Nome
   if (!nome || nome.length < 2) {
     return res
       .status(400)
       .json({ erro: "Informe o nome com ao menos 2 caracteres" });
   }
 
-  // Validação da Foto (esperando que venha de `req.file`)
   if (!foto) {
     return res.status(400).json({ erro: "Informe a foto do aluno" });
   }
 
-  // Checando se é uma atualização ou um novo cadastro
   const alteracaoRegistro = req.params.id != null;
 
   if (alteracaoRegistro) {

@@ -1,23 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   Image,
   StyleSheet,
   Alert,
 } from "react-native";
 import api from "../services/api";
-
 import * as ImagePicker from "expo-image-picker";
+import { useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
 export default function AlunoScreen() {
-  const [ra, setRa] = useState("");
-  const [nome, setNome] = useState("");
-  const [foto, setFoto] = useState(null);
+  const navigation = useNavigation();
+  const route = useRoute();
+  const aluno = route.params?.aluno;
 
-  // Função para abrir a câmera
+  const [ra, setRa] = useState(aluno ? aluno.ra : "");
+  const [nome, setNome] = useState(aluno ? aluno.nome : "");
+  const [foto, setFoto] = useState(aluno ? aluno.foto : null);
+  const [fotoTirada, setFotoTirada] = useState(false);
+
+  useEffect(() => {
+    if (aluno && aluno.ra) {
+      carregarFoto(aluno.ra);
+    }
+  }, [aluno]);
+
   const tirarFoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
@@ -26,16 +37,29 @@ export default function AlunoScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      base64: true, // Garante que a imagem seja capturada em base64
-      quality: 0.5, // Ajusta a qualidade da imagem, caso queira reduzir o tamanho
+      base64: true,
+      quality: 0.5,
     });
 
     if (!result.canceled) {
-      setFoto(result.assets[0].base64); // Armazena a imagem em base64
+      setFotoTirada(true);
+      setFoto(result.assets[0].base64);
     }
   };
 
-  // Função para salvar o aluno
+  const carregarFoto = async (ra) => {
+    try {
+      const response = await api.get(`/aluno/${ra}/foto`);
+      if (response.data) {
+        const { type, foto } = response.data;
+        setFoto(`data:${type};base64,${foto}`);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar foto do aluno:", error);
+      setFoto(null);
+    }
+  };
+
   const salvarAluno = async () => {
     if (!ra || !nome || !foto) {
       Alert.alert("Erro", "Preencha todos os campos e tire uma foto.");
@@ -43,22 +67,46 @@ export default function AlunoScreen() {
     }
 
     try {
+      let alunoId = aluno?._id;
+      console.log(1);
+
+      const fotoParaEnvio = foto.substring(0, 10).includes("data")
+        ? foto.replace("data:image/png;base64,", "")
+        : foto;
+      console.log(2);
+      console.log(fotoParaEnvio.substring(0, 10));
       const objAluno = {
         ra,
         nome,
-        foto,
+        foto: fotoParaEnvio,
       };
-      const response = await api.post("/aluno", objAluno);
+      console.log(3);
+
+      const url = alunoId ? `/aluno/${alunoId}` : "/aluno";
+      const method = alunoId ? "put" : "post";
+      console.log("1");
+
+      console.log(4);
+      const response = await api[method](url, objAluno);
+      console.log(alunoId);
+
       if (response.status >= 200 && response.status < 300) {
-        Alert.alert("Sucesso", "Aluno salvo com sucesso!");
+        Alert.alert(
+          "Sucesso",
+          alunoId ? "Aluno atualizado com sucesso!" : "Aluno salvo com sucesso!"
+        );
+
         setRa("");
         setNome("");
         setFoto(null);
+        setFotoTirada(false);
+        navigation.navigate("Listagem");
       } else {
         Alert.alert("Erro", "Erro ao salvar o aluno.");
       }
     } catch (error) {
-      Alert.alert("Erro", error?.response?.data?.erro);
+      console.log(error);
+      Alert.alert("Erro", error?.response?.data?.erro || "Erro desconhecido.");
     }
   };
 
@@ -73,6 +121,7 @@ export default function AlunoScreen() {
       />
 
       <Text style={styles.label}>Nome</Text>
+
       <TextInput
         style={styles.input}
         value={nome}
@@ -80,16 +129,25 @@ export default function AlunoScreen() {
         placeholder="Digite o nome do aluno"
       />
 
-      <Button title="Tirar Foto" onPress={tirarFoto} />
-
-      {foto && (
+      {foto && fotoTirada && (
         <Image
           source={{ uri: `data:image/png;base64,${foto}` }}
           style={styles.image}
         />
       )}
+      {foto && !fotoTirada && (
+        <Image source={{ uri: foto }} style={styles.image} />
+      )}
 
-      <Button title="Salvar Aluno" onPress={salvarAluno} />
+      <TouchableOpacity style={styles.button} onPress={tirarFoto}>
+        <Text style={styles.buttonText}>Tirar Foto</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={salvarAluno}>
+        <Text style={styles.buttonText}>
+          {aluno ? "Atualizar Aluno" : "Salvar Aluno"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -98,11 +156,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#d3eaf5",
   },
   label: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#000",
     marginTop: 20,
   },
   input: {
@@ -111,6 +170,27 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginTop: 5,
+    backgroundColor: "#fff",
+    width: "100%",
+  },
+  button: {
+    backgroundColor: "#003366",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 10,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   image: {
     width: 150,

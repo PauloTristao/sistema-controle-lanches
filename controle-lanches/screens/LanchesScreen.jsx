@@ -20,17 +20,15 @@ export default function LanchesScreen({ route, navigation }) {
   const [quantidade, setQuantidade] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [fotoAluno, setFotoAluno] = useState(null);
-  const [idAutorizacao, setIdAutorizacao] = useState(null); // Para armazenar o id da autorização
+  const [idAutorizacao, setIdAutorizacao] = useState(null);
 
-  // Dados recebidos da navegação
   const {
     ra,
     quantidade: quantidadeAutorizada,
     dataLiberacao: dataLiberacaoParam,
-    idAutorizacao: idAutorizacaoParam, // Recebe o ID da autorização
+    idAutorizacao: idAutorizacaoParam,
   } = route.params || {};
 
-  // Carregar alunos do banco
   const carregarAlunos = async () => {
     try {
       const response = await api.get("/aluno/filter/getAllRaAndName");
@@ -40,7 +38,6 @@ export default function LanchesScreen({ route, navigation }) {
     }
   };
 
-  // Carregar foto do aluno selecionado
   const carregarFoto = async (ra) => {
     try {
       const response = await api.get(`/aluno/${ra}/foto`);
@@ -54,24 +51,22 @@ export default function LanchesScreen({ route, navigation }) {
     }
   };
 
-  // Efeito para carregar os dados quando a tela for acessada
   useEffect(() => {
     carregarAlunos();
-  }, []); // Carrega alunos apenas uma vez
+  }, []);
 
-  // Efeito para setar os dados quando o aluno for encontrado
   useEffect(() => {
     if (ra && alunos.length > 0) {
       const alunoEncontrado = alunos.find((aluno) => aluno.ra === ra);
       if (alunoEncontrado) {
         setAlunoSelecionado(alunoEncontrado.ra);
-        carregarFoto(alunoEncontrado.ra); // Carregar a foto do aluno
-        setQuantidade(String(quantidadeAutorizada || "")); // Preenche a quantidade
+        carregarFoto(alunoEncontrado.ra);
+        setQuantidade(String(quantidadeAutorizada || ""));
         if (dataLiberacaoParam) {
-          setDataLiberacao(new Date(dataLiberacaoParam)); // Preenche a data de liberação
+          setDataLiberacao(new Date(dataLiberacaoParam));
         }
         if (idAutorizacaoParam) {
-          setIdAutorizacao(idAutorizacaoParam); // Armazena o ID da autorização
+          setIdAutorizacao(idAutorizacaoParam);
         }
       }
     }
@@ -81,9 +76,8 @@ export default function LanchesScreen({ route, navigation }) {
     quantidadeAutorizada,
     dataLiberacaoParam,
     idAutorizacaoParam,
-  ]); // Recarrega quando os dados mudarem
+  ]);
 
-  // Função para autorizar o lanche
   const autorizarLanche = async () => {
     try {
       if (!alunoSelecionado || !dataLiberacao || !quantidade) {
@@ -97,22 +91,20 @@ export default function LanchesScreen({ route, navigation }) {
 
       await api.post("/autorizacao", {
         dataLiberacao: dataLiberacao.toISOString(),
-        ra: alunoSelecionado, // Agora estamos usando alunoSelecionado
+        ra: alunoSelecionado,
         qtdeLanches: quantidade,
       });
 
-      // Se a autorização for bem-sucedida, atualizamos o estado
       setDataLiberacao(new Date());
       setQuantidade("");
-      setAlunoSelecionado(null); // Limpa a seleção do aluno após autorizar
-      setFotoAluno(null); // Limpa a foto após a autorização
+      setAlunoSelecionado(null);
+      setFotoAluno(null);
     } catch (error) {
       console.error("Erro ao autorizar lanche:", error);
       Alert.alert("Erro", error?.response?.data?.erro);
     }
   };
 
-  // Função para atualizar a autorização
   const atualizarLanche = async () => {
     try {
       if (!idAutorizacao) {
@@ -129,25 +121,23 @@ export default function LanchesScreen({ route, navigation }) {
       }
 
       await api.put(`/autorizacao/${idAutorizacao}`, {
-        ra: alunoSelecionado, // Usando alunoSelecionado em vez de ra
+        ra: alunoSelecionado,
         idAutorizacao: idAutorizacao,
         dataLiberacao: dataLiberacao.toISOString(),
         qtdeLanches: quantidade,
       });
 
-      // Se a atualização for bem-sucedida, notificamos o usuário e limpamos os campos
       Alert.alert("Sucesso", "Autorização atualizada com sucesso!");
       setQuantidade("");
       setAlunoSelecionado(null);
       setFotoAluno(null);
-      navigation.goBack(); // Volta para a tela anterior
+      navigation.goBack();
     } catch (error) {
       console.error("Erro ao atualizar lanche:", error);
       Alert.alert("Erro", error?.response?.data?.erro);
     }
   };
 
-  // Alterar data de liberação
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || dataLiberacao;
     setShowDatePicker(false);
@@ -161,8 +151,6 @@ export default function LanchesScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Controle de Lanches</Text>
-
       <TouchableOpacity
         style={styles.input}
         onPress={() => setShowDatePicker(true)}
@@ -216,9 +204,13 @@ export default function LanchesScreen({ route, navigation }) {
       />
 
       {idAutorizacao ? (
-        <Button title="Salvar Alterações" onPress={atualizarLanche} />
+        <TouchableOpacity style={styles.button} onPress={atualizarLanche}>
+          <Text style={styles.buttonText}>Salvar Alterações</Text>
+        </TouchableOpacity>
       ) : (
-        <Button title="Autorizar Lanche" onPress={autorizarLanche} />
+        <TouchableOpacity style={styles.button} onPress={autorizarLanche}>
+          <Text style={styles.buttonText}>Autorizar Lanche</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -227,33 +219,58 @@ export default function LanchesScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
+    padding: 20,
+    backgroundColor: "#d3eaf5",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
+    color: "#000",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
-    marginBottom: 12,
     borderRadius: 5,
-  },
-  pickerContainer: {
-    marginBottom: 12,
-  },
-  picker: {
-    height: 50,
+    marginTop: 10,
+    backgroundColor: "#fff",
     width: "100%",
   },
+  button: {
+    backgroundColor: "#003366",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 10,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  pickerContainer: {
+    marginVertical: 20,
+  },
+  picker: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+  },
   alunoFoto: {
-    width: 100,
-    height: 100,
-    marginTop: 10,
+    width: 150,
+    height: 150,
+    marginVertical: 20,
     alignSelf: "center",
-    borderRadius: 50,
+    borderRadius: 10,
   },
 });

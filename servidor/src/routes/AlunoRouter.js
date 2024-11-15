@@ -4,7 +4,6 @@ const router = express.Router();
 const AlunoController = require("../controller/AlunoController");
 const AlunoValidation = require("../middlewares/AlunoValidation");
 
-// Rota para criar aluno
 router.post("/", AlunoValidation, AlunoController.create);
 router.put("/:id", AlunoValidation, AlunoController.update);
 router.delete("/:id", AlunoController.delete);
